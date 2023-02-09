@@ -28,7 +28,7 @@ var adUnits = [
             {
                 bidder: 'flipp',
                 params: {
-                    publisherNameIdentifier: 'wishabi-test-publisher', // Optional
+                    publisherNameIdentifier: 'wishabi-test-publisher', // Required
                     siteId: 1192075, // Required
                     zoneIds: [260678], // Optional
                     properties: {

@@ -1,9 +1,59 @@
-import * as utils from 'src/utils';
+import { isEmpty } from '../src/utils.js';
 import { registerBidder } from '../src/adapters/bidderFactory.js';
 import { BANNER } from '../src/mediaTypes.js';
-const KEVEL_NETWORK_ID = 11090;
+const NETWORK_ID = 11090;
+const AD_TYPES = [4309, 641];
+const TARGET_NAME = 'inline';
 const BIDDER_CODE = 'flipp';
 const ENDPOINT_URL = 'https://gateflipp-stg.flippback.com/flyer-locator-service-stg/campaigns';
+const DEFAULT_CPM = 1;
+const DEFAULT_TTL = 30;
+const DEFAULT_CURRENCY = 'USD';
+
+const generateUUID = () => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
+
+function makeCreative(res) {
+  const campaignJSON = JSON.stringify(res).replaceAll('<script></script>', '');
+
+  return (`
+            <head>
+                <script async src="snippet/flipptag.js"></script>
+                <script>
+                    var campaignsResponse = ${campaignJSON};
+                    window.flippxp = window.flippxp || { run: [] };
+                    window.flippxp.run.push(function () {
+                    window.flippxp.registerSlot(
+                        '#flipp-scroll-ad-content',
+                        'wishabi-test-publisher',
+                        1192075,
+                        [260678],
+                     {
+                          nestedIframe: true,
+                          nestedIframeFullBleed: true,
+                          isGoogleAdManager: true,
+                       compactHeight: 600,
+                        startCompact: true,
+                        dwellExpandable: true,
+                        experienceLimit: 1,
+                        prebid: {},
+                        campaigns: campaignsResponse
+                        },
+                      );
+                    });
+                 </script>
+            </head>
+
+            <body style="margin: 0px">
+                <div id="flipp-scroll-ad-content"></div>
+            </body>
+        `);
+}
 export const spec = {
   code: BIDDER_CODE,
   supportedMediaTypes: [BANNER],
@@ -19,21 +69,37 @@ export const spec = {
   /**
      * Make a server request from the list of BidRequests.
      *
-     * @param {validBidRequests[]} - an array of bids
+     * @param {BidRequest[]} validBidRequests[] an array of bids
+     * @param {BidderRequest} bidderRequest master bidRequest object
      * @return ServerRequest Info describing the request to the server.
      */
-  buildRequests: function(validBidRequests) {
-    return validBidRequests.map(bid => (
+  buildRequests: function(validBidRequests, bidderRequest) {
+    return validBidRequests.map((bid, index) => (
       {
         method: 'POST',
         url: ENDPOINT_URL,
         data: {
           placements: [
             {
-              divName: bid.code,
-              networkId: KEVEL_NETWORK_ID,
+              divName: TARGET_NAME,
+              networkId: NETWORK_ID,
+              siteID: bid.params.siteID,
+              adTypes: AD_TYPES,
+              count: 1,
+              ...(!isEmpty(bid.params.zoneIds) && {zoneIds: bid.params.zoneIds}),
+              properties: {
+                ...(!isEmpty(bid.params.contentCode) && {contentCode: bid.params.contentCode.slice(0, 32)}),
+              },
             }
-          ]
+          ],
+          url: bidderRequest.refererInfo.page,
+          user: {key: isEmpty(bid.params.userKey) ? generateUUID() : bid.params.userKey},
+          prebid: {
+            requestId: bid.bidId,
+            publisherNameIdentifier: bid.params.publisherNameIdentifier,
+            height: bid.mediaTypes.banner.sizes[index][0],
+            width: bid.mediaTypes.banner.sizes[index][1],
+          }
         },
       }
     ))[0];
@@ -45,23 +111,26 @@ export const spec = {
      * @return {Bid[]} An array of bids which were nested inside the server.
      */
   interpretResponse: function(serverResponse, bidRequest) {
-    // const serverBody  = serverResponse.body;
-    // const headerValue = serverResponse.headers.get('some-response-header');
+    if (!serverResponse?.body) return [];
+    const res = serverResponse.body;
     const bidResponses = [];
-    const bidResponse = {
-      requestId: bidRequest.bidId,
-      cpm: CPM,
-      width: WIDTH,
-      height: HEIGHT,
-      creativeId: CREATIVE_ID,
-      dealId: DEAL_ID,
-      currency: CURRENCY,
-      netRevenue: true,
-      ttl: TIME_TO_LIVE,
-      referrer: REFERER,
-      ad: CREATIVE_BODY
-    };
-    bidResponses.push(bidResponse);
+    if (!isEmpty(res) && !isEmpty(res.decisions) && !isEmpty(res.decisions.inline)) {
+      const creative = res.prebid?.creative || makeCreative(res);
+      const decision = res.decisions.inline[0];
+      const cpm = res.prebid?.cpm || DEFAULT_CPM;
+      const bidResponse = {
+        requestId: bidRequest.bidId,
+        cpm,
+        width: bidRequest.data.prebid.width,
+        height: bidRequest.data.prebid.height,
+        creativeId: decision.adId,
+        currency: DEFAULT_CURRENCY,
+        netRevenue: true,
+        ttl: DEFAULT_TTL,
+        ad: creative,
+      };
+      bidResponses.push(bidResponse);
+    }
     return bidResponses;
   },
 
