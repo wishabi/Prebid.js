@@ -1,11 +1,11 @@
-import { isEmpty } from '../src/utils.js';
+import {isEmpty} from '../src/utils.js';
 import { registerBidder } from '../src/adapters/bidderFactory.js';
 import { BANNER } from '../src/mediaTypes.js';
 const NETWORK_ID = 11090;
 const AD_TYPES = [4309, 641];
 const TARGET_NAME = 'inline';
 const BIDDER_CODE = 'flipp';
-const ENDPOINT_URL = 'http://localhost:7000';
+const ENDPOINT_URL = 'http://127.0.0.1:7000/prebid_campaigns';
 // const ENDPOINT_URL = 'https://gateflipp-stg.flippback.com/flyer-locator-service-stg/prebid_campaigns';
 const DEFAULT_TTL = 30;
 const DEFAULT_CURRENCY = 'USD';
@@ -80,7 +80,7 @@ export const spec = {
       const decision = res.decisions.inline[0];
       const cpm = res.prebid?.cpm;
       const bidResponse = {
-        requestId: bidRequest.bidId,
+        requestId: bidRequest.data.prebid.requestId,
         cpm,
         width: bidRequest.data.prebid.width,
         height: bidRequest.data.prebid.height,
