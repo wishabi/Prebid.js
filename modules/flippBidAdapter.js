@@ -5,7 +5,8 @@ const NETWORK_ID = 11090;
 const AD_TYPES = [4309, 641];
 const TARGET_NAME = 'inline';
 const BIDDER_CODE = 'flipp';
-const ENDPOINT_URL = 'https://gateflipp-stg.flippback.com/flyer-locator-service-stg/campaigns';
+// const ENDPOINT_URL = 'http://localhost:7000';
+const ENDPOINT_URL = 'https://gateflipp-stg.flippback.com/flyer-locator-service-stg/prebid_campaigns';
 const DEFAULT_CPM = 1;
 const DEFAULT_TTL = 30;
 const DEFAULT_CURRENCY = 'USD';
@@ -49,7 +50,7 @@ function makeCreative(res) {
                  </script>
             </head>
 
-            <body style="margin: 0px">
+            <body style="margin: 0">
                 <div id="flipp-scroll-ad-content"></div>
             </body>
         `);
@@ -83,7 +84,7 @@ export const spec = {
             {
               divName: TARGET_NAME,
               networkId: NETWORK_ID,
-              siteID: bid.params.siteID,
+              siteId: bid.params.siteId,
               adTypes: AD_TYPES,
               count: 1,
               ...(!isEmpty(bid.params.zoneIds) && {zoneIds: bid.params.zoneIds}),
@@ -105,11 +106,12 @@ export const spec = {
     ))[0];
   },
   /**
-     * Unpack the response from the server into a list of bids.
-     *
-     * @param {ServerResponse} serverResponse A successful response from the server.
-     * @return {Bid[]} An array of bids which were nested inside the server.
-     */
+   * Unpack the response from the server into a list of bids.
+   *
+   * @param {ServerResponse} serverResponse A successful response from the server.
+   * @param {BidRequest} bidRequest A bid request object
+   * @return {Bid[]} An array of bids which were nested inside the server.
+   */
   interpretResponse: function(serverResponse, bidRequest) {
     if (!serverResponse?.body) return [];
     const res = serverResponse.body;
