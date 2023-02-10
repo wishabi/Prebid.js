@@ -32,7 +32,6 @@ var adUnits = [
                     siteId: 1192075, // Required
                     zoneIds: [260678], // Optional
                     properties: {
-                        contentCode: "",
                         userKey: "",
                     } // Optional
                 }

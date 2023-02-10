@@ -1,12 +1,13 @@
-import { isEmpty } from '../src/utils.js';
+import {isEmpty, parseUrl} from '../src/utils.js';
 import { registerBidder } from '../src/adapters/bidderFactory.js';
 import { BANNER } from '../src/mediaTypes.js';
 const NETWORK_ID = 11090;
 const AD_TYPES = [4309, 641];
 const TARGET_NAME = 'inline';
 const BIDDER_CODE = 'flipp';
-// const ENDPOINT_URL = 'http://localhost:7000';
-const ENDPOINT_URL = 'https://gateflipp-stg.flippback.com/flyer-locator-service-stg/prebid_campaigns';
+const ENDPOINT_DEV = 'http://127.0.0.1:7000/prebid_campaigns';
+const ENDPOINT_STAGING = 'https://gateflipp-stg.flippback.com/flyer-locator-service-stg/prebid_campaigns';
+const ENDPOINT_PRODUCTION = 'https://gateflipp.flippback.com/flyer-locator-service/prebid_campaigns';
 const DEFAULT_CPM = 1;
 const DEFAULT_TTL = 30;
 const DEFAULT_CURRENCY = 'USD';
@@ -19,42 +20,6 @@ const generateUUID = () => {
   });
 };
 
-function makeCreative(res) {
-  const campaignJSON = JSON.stringify(res).replaceAll('<script></script>', '');
-
-  return (`
-            <head>
-                <script async src="snippet/flipptag.js"></script>
-                <script>
-                    var campaignsResponse = ${campaignJSON};
-                    window.flippxp = window.flippxp || { run: [] };
-                    window.flippxp.run.push(function () {
-                    window.flippxp.registerSlot(
-                        '#flipp-scroll-ad-content',
-                        'wishabi-test-publisher',
-                        1192075,
-                        [260678],
-                     {
-                          nestedIframe: true,
-                          nestedIframeFullBleed: true,
-                          isGoogleAdManager: true,
-                       compactHeight: 600,
-                        startCompact: true,
-                        dwellExpandable: true,
-                        experienceLimit: 1,
-                        prebid: {},
-                        campaigns: campaignsResponse
-                        },
-                      );
-                    });
-                 </script>
-            </head>
-
-            <body style="margin: 0">
-                <div id="flipp-scroll-ad-content"></div>
-            </body>
-        `);
-}
 export const spec = {
   code: BIDDER_CODE,
   supportedMediaTypes: [BANNER],
@@ -75,10 +40,15 @@ export const spec = {
      * @return ServerRequest Info describing the request to the server.
      */
   buildRequests: function(validBidRequests, bidderRequest) {
-    return validBidRequests.map((bid, index) => (
-      {
+    return validBidRequests.map((bid, index) => {
+      const urlParams = parseUrl(bidderRequest.refererInfo.page).search;
+      let endpoint = ENDPOINT_PRODUCTION;
+      if (urlParams['pb-env'] === 'dev') endpoint = ENDPOINT_DEV;
+      if (urlParams['pb-env'] === 'staging') endpoint = ENDPOINT_STAGING;
+      const contentCode = urlParams['flipp-content-code'];
+      return {
         method: 'POST',
-        url: ENDPOINT_URL,
+        url: endpoint,
         data: {
           placements: [
             {
@@ -89,7 +59,7 @@ export const spec = {
               count: 1,
               ...(!isEmpty(bid.params.zoneIds) && {zoneIds: bid.params.zoneIds}),
               properties: {
-                ...(!isEmpty(bid.params.contentCode) && {contentCode: bid.params.contentCode.slice(0, 32)}),
+                ...(!isEmpty(contentCode) && {contentCode: contentCode.slice(0, 32)}),
               },
             }
           ],
@@ -102,8 +72,8 @@ export const spec = {
             width: bid.mediaTypes.banner.sizes[index][1],
           }
         },
-      }
-    ))[0];
+      };
+    })
   },
   /**
    * Unpack the response from the server into a list of bids.
@@ -117,11 +87,11 @@ export const spec = {
     const res = serverResponse.body;
     const bidResponses = [];
     if (!isEmpty(res) && !isEmpty(res.decisions) && !isEmpty(res.decisions.inline)) {
-      const creative = res.prebid?.creative || makeCreative(res);
       const decision = res.decisions.inline[0];
+      const creative = decision.prebid?.creative;
       const cpm = res.prebid?.cpm || DEFAULT_CPM;
       const bidResponse = {
-        requestId: bidRequest.bidId,
+        requestId: bidRequest.data.prebid.requestId,
         cpm,
         width: bidRequest.data.prebid.width,
         height: bidRequest.data.prebid.height,
