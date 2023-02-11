@@ -41,9 +41,8 @@ export const spec = {
   buildRequests: function(validBidRequests, bidderRequest) {
     const urlParams = parseUrl(bidderRequest.refererInfo.page).search;
     const contentCode = urlParams['flipp-content-code'];
-    let userKey;
+    const userKey = isEmpty(validBidRequests[0]?.params.userKey) ? generateUUID() : validBidRequests[0]?.params.userKey;
     const placements = validBidRequests.map((bid, index) => {
-      userKey = isEmpty(bid.params.userKey) ? generateUUID() : bid.params.userKey;
       return {
         divName: TARGET_NAME,
         networkId: NETWORK_ID,
@@ -86,6 +85,7 @@ export const spec = {
     const res = serverResponse.body;
     if (!isEmpty(res) && !isEmpty(res.decisions) && !isEmpty(res.decisions.inline)) {
       return res.decisions.inline.map(decision => ({
+        bidderCode: BIDDER_CODE,
         requestId: decision.prebid?.requestId,
         cpm: decision.prebid?.cpm,
         width: decision.width,
