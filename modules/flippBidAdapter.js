@@ -5,9 +5,7 @@ const NETWORK_ID = 11090;
 const AD_TYPES = [4309, 641];
 const TARGET_NAME = 'inline';
 const BIDDER_CODE = 'flipp';
-const ENDPOINT = 'http://127.0.0.1:7000/prebid_campaigns';
-// const ENDPOINT = 'https://gateflipp-stg.flippback.com/flyer-locator-service-stg/prebid_campaigns';
-// const ENDPOINT = 'https://gateflipp.flippback.com/flyer-locator-service/prebid_campaigns';
+const ENDPOINT = 'https://gateflipp.flippback.com/flyer-locator-service/prebid_campaigns';
 const DEFAULT_TTL = 30;
 const DEFAULT_CURRENCY = 'USD';
 

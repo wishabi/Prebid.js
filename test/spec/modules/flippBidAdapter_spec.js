@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import {spec} from 'modules/flippBidAdapter';
 import {newBidder} from 'src/adapters/bidderFactory';
-const ENDPOINT = 'http://127.0.0.1:7000/prebid_campaigns';
+const ENDPOINT = 'https://gateflipp.flippback.com/flyer-locator-service/prebid_campaigns';
 describe('flippAdapter', function () {
   const adapter = newBidder(spec);
 
@@ -125,6 +125,43 @@ describe('flippAdapter', function () {
       expect(result).to.have.lengthOf(1);
       expect(result).to.deep.have.same.members(expectedResponse);
     });
+
+    it('should get empty bid response when no ad is returned', function() {
+      const bidRequest = {
+        method: 'POST',
+        url: ENDPOINT,
+        data: {
+          placements: [{
+            divName: 'slot',
+            networkId: 12345,
+            siteId: 12345,
+            adTypes: [12345],
+            count: 1,
+            prebid: {
+              requestId: '237f4d1a293f99',
+              publisherNameIdentifier: 'bid.params.publisherNameIdentifier',
+              height: 600,
+              width: 300,
+            },
+            user: '10462725-da61-4d3a-beff-6d05239e9a6e"',
+          }],
+          url: 'http://example.com',
+        },
+      };
+
+      const serverResponse = {
+        body: {
+          'decisions': {
+            'inline': []
+          },
+          'location': {'city': 'Oakville'},
+        },
+      };
+
+      const result = spec.interpretResponse(serverResponse, bidRequest);
+      expect(result).to.have.lengthOf(0);
+      expect(result).to.deep.have.same.members([]);
+    })
 
     it('should get empty response when bid server returns 204', function() {
       expect(spec.interpretResponse({})).to.be.empty;
