@@ -31,9 +31,7 @@ var adUnits = [
                     publisherNameIdentifier: 'wishabi-test-publisher', // Required
                     siteId: 1192075, // Required
                     zoneIds: [260678], // Optional
-                    properties: {
-                        userKey: "",
-                    } // Optional
+                    userKey: "", // Optional
                 }
             }
         ]
