@@ -8,6 +8,8 @@ const BIDDER_CODE = 'flipp';
 const ENDPOINT = 'https://gateflipp.flippback.com/flyer-locator-service/prebid_campaigns';
 const DEFAULT_TTL = 30;
 const DEFAULT_CURRENCY = 'USD';
+const DEFAULT_CREATIVE_TYPE = 'NativeX';
+const VALID_CREATIVE_TYPES = ['DTX', 'NativeX'];
 
 const generateUUID = () => {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -15,6 +17,20 @@ const generateUUID = () => {
     const v = c === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
+};
+
+/**
+ * Determines if a creativeType is valid
+ *
+ * @param {string} creativeType The Creative Type to validate.
+ * @return string creativeType if this is a valid Creative Type, and 'NativeX' otherwise.
+ */
+const validateCreativeType = (creativeType) => {
+  if (creativeType && VALID_CREATIVE_TYPES.includes(creativeType)) {
+    return creativeType;
+  } else {
+    return DEFAULT_CREATIVE_TYPE;
+  }
 };
 
 export const spec = {
@@ -52,6 +68,7 @@ export const spec = {
           ...(!isEmpty(contentCode) && {contentCode: contentCode.slice(0, 32)}),
         },
         prebid: {
+          creativeType: validateCreativeType(bid.params.creativeType),
           requestId: bid.bidId,
           publisherNameIdentifier: bid.params.publisherNameIdentifier,
           height: bid.mediaTypes.banner.sizes[index][0],
