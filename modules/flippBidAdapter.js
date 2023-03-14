@@ -3,6 +3,7 @@ import { registerBidder } from '../src/adapters/bidderFactory.js';
 import { BANNER } from '../src/mediaTypes.js';
 const NETWORK_ID = 11090;
 const AD_TYPES = [4309, 641];
+const DTX_TYPES = [5061];
 const TARGET_NAME = 'inline';
 const BIDDER_CODE = 'flipp';
 const ENDPOINT = 'https://gateflipp.flippback.com/flyer-locator-service/prebid_campaigns';
@@ -33,6 +34,13 @@ const validateCreativeType = (creativeType) => {
   }
 };
 
+const getAdTypes = (creativeType) => {
+  if (creativeType === 'DTX') {
+    return DTX_TYPES;
+  }
+  return AD_TYPES;
+}
+
 export const spec = {
   code: BIDDER_CODE,
   supportedMediaTypes: [BANNER],
@@ -61,7 +69,7 @@ export const spec = {
         divName: TARGET_NAME,
         networkId: NETWORK_ID,
         siteId: bid.params.siteId,
-        adTypes: AD_TYPES,
+        adTypes: getAdTypes(bid.params.creativeType),
         count: 1,
         ...(!isEmpty(bid.params.zoneIds) && {zoneIds: bid.params.zoneIds}),
         properties: {
