@@ -33,7 +33,8 @@ var adUnits = [
                     zoneIds: [260678], // Optional
                     properties: {
                         userKey: "",
-                    } // Optional
+                    }, // Optional
+                    creativeType: 'NativeX', // Optional
                 }
             }
         ]
