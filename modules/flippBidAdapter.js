@@ -37,10 +37,6 @@ export function getUserKey(options = {}) {
   // Generate if none found
   userKey = generateUUID();
 
-  if (!userKey) {
-    return '';
-  }
-
   // Set cookie
   if (storage.cookiesAreEnabled()) {
     storage.setCookie(FLIPP_USER_KEY, userKey);
