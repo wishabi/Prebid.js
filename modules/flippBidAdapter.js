@@ -1,4 +1,4 @@
-import {isEmpty, parseUrl, triggerPixel} from '../src/utils.js';
+import {isEmpty, parseUrl} from '../src/utils.js';
 import { registerBidder } from '../src/adapters/bidderFactory.js';
 import { BANNER } from '../src/mediaTypes.js';
 import {getStorageManager} from '../src/storageManager.js';
@@ -13,39 +13,24 @@ const DEFAULT_TTL = 30;
 const DEFAULT_CURRENCY = 'USD';
 const DEFAULT_CREATIVE_TYPE = 'NativeX';
 const VALID_CREATIVE_TYPES = ['DTX', 'NativeX'];
+const FLIPP_USER_KEY = 'flipp-uid';
 
 let userKey = null;
-let cookieSynced = false;
 export const storage = getStorageManager({bidderCode: BIDDER_CODE});
-
-const syncUserKey = (userKey) => {
-  if (!cookieSynced) {
-    triggerPixel(`https://idsync.rlcdn.com/712559.gif?partner_uid=${userKey}`);
-    cookieSynced = true;
-  }
-};
 
 export function getUserKey(options = {}) {
   if (userKey) {
-    syncUserKey(userKey);
     return userKey;
   }
 
   // If the partner provides the user key use it, otherwise fallback to cookies
-  if ('userKey' in options && options.userKey) {
-    if (isValidUserKey(options.userKey)) {
-      userKey = options.userKey;
-      syncUserKey(userKey);
-      return options.userKey;
-    }
+  if (options.userKey && isValidUserKey(options.userKey)) {
+    userKey = options.userKey;
+    return options.userKey;
   }
-
-  const FLIPP_USER_KEY = 'flipp-uid';
-
   // Grab from Cookie
   const foundUserKey = storage.cookiesAreEnabled() && storage.getCookie(FLIPP_USER_KEY);
   if (foundUserKey) {
-    syncUserKey(foundUserKey);
     return foundUserKey;
   }
 
@@ -53,7 +38,7 @@ export function getUserKey(options = {}) {
   userKey = generateUUID();
 
   if (!userKey) {
-    return null;
+    return '';
   }
 
   // Set cookie
@@ -61,7 +46,6 @@ export function getUserKey(options = {}) {
     storage.setCookie(FLIPP_USER_KEY, userKey);
   }
 
-  syncUserKey(userKey);
   return userKey;
 }
 
